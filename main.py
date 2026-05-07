@@ -335,11 +335,15 @@ async def rescan_pipeline(search_id: int, query: str, location: str, skip_urls: 
                               f"🔄 Re-scan '{single_query}' ({q_idx+1}/{len(queries)}) — skipping {len(skip_urls)} known")
             gm_leads, scraped_urls = await scrape_google_maps(
                 single_query, location, max_results=99999,
-                progress_cb=progress_cb, skip_urls=skip_urls
+                progress_cb=progress_cb, skip_urls=skip_urls,
+                min_reviews=MIN_REVIEWS
             )
             skip_urls.update(scraped_urls)
 
             for lead in gm_leads:
+                # Phase 1 already filtered <MIN_REVIEWS, but safety net for edge cases
+                if (lead.get("review_count") or 0) < MIN_REVIEWS:
+                    continue
                 lead_id = await db.insert_lead(search_id, lead)
                 lead["_db_id"] = lead_id
                 new_leads.append(lead)
@@ -541,17 +545,18 @@ async def run_search_pipeline(search_id: int, query: str, location: str, radius_
                 # Pass known URLs so Phase 1 skips them entirely
                 gm_leads, scraped_urls = await scrape_google_maps(
                     single_query, location, max_results=99999,
-                    progress_cb=progress_cb, skip_urls=known_urls
+                    progress_cb=progress_cb, skip_urls=known_urls,
+                    min_reviews=MIN_REVIEWS
                 )
 
                 # Merge Phase 1 URLs into known set (these match Phase 1 URLs of next query)
                 known_urls.update(scraped_urls)
 
-                # Filter by minimum reviews & save each lead to DB
+                # Phase 1 already filtered <MIN_REVIEWS at URL level — safety net re-check
                 qualified = [l for l in gm_leads if (l.get("review_count") or 0) >= MIN_REVIEWS]
                 skipped = len(gm_leads) - len(qualified)
                 await progress_cb("saving", 0, len(qualified),
-                                  f"Saving '{single_query}': {len(qualified)} qualified, {skipped} skipped (<{MIN_REVIEWS} reviews)...")
+                                  f"Saving '{single_query}': {len(qualified)} qualified, {skipped} filtered in Phase 2 safety check...")
                 for lead in qualified:
                     lead_id = await db.insert_lead(search_id, lead)
                     lead["_db_id"] = lead_id

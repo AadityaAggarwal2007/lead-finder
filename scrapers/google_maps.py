@@ -118,7 +118,7 @@ EXTRACT_PLACE_JS = '''() => {
 }'''
 
 
-async def scrape_google_maps(query: str, location: str, max_results: int = 200, progress_cb=None, skip_urls: set = None):
+async def scrape_google_maps(query: str, location: str, max_results: int = 200, progress_cb=None, skip_urls: set = None, min_reviews: int = 20):
     all_results = []
     seen_urls = set(skip_urls or set())
     all_place_urls = []
@@ -136,14 +136,14 @@ async def scrape_google_maps(query: str, location: str, max_results: int = 200, 
             # ═══════════════════════════════════════════════
             if progress_cb:
                 await progress_cb("google_maps", 0, len(searches),
-                                  f"Phase 1: Scanning {len(searches)} areas with {PARALLEL_WORKERS} workers for '{query}'...")
+                                  f"Phase 1: Scanning {len(searches)} areas with {PARALLEL_WORKERS} workers for '{query}' (filtering <{min_reviews} reviews)...")
 
             # Split areas into chunks for parallel processing
             area_chunks = [[] for _ in range(PARALLEL_WORKERS)]
             for i, s in enumerate(searches):
                 area_chunks[i % PARALLEL_WORKERS].append((i, s))
 
-            phase1_progress = {"done": 0, "total": len(searches), "urls_found": 0}
+            phase1_progress = {"done": 0, "total": len(searches), "urls_found": 0, "skipped_low_reviews": 0}
 
             async def phase1_worker(worker_id, area_list):
                 """One worker scanning its assigned areas."""
@@ -215,20 +215,49 @@ async def scrape_google_maps(query: str, location: str, max_results: int = 200, 
                                 break
                             prev_count = curr_count
 
-                        # Collect URLs
-                        urls = await page.evaluate('''() => {
-                            const anchors = document.querySelectorAll('div[role="feed"] a[href*="/maps/place/"]');
-                            const links = [];
-                            for (const a of anchors) links.push(a.href);
-                            return links;
-                        }''')
+                        # Collect URLs WITH review counts from feed cards
+                        # Google Maps feed shows review count as "(1,234)" next to rating
+                        items = await page.evaluate('''(minReviews) => {
+                            const results = [];
+                            const cards = document.querySelectorAll('div[role="feed"] > div');
+                            for (const card of cards) {
+                                const link = card.querySelector('a[href*="/maps/place/"]');
+                                if (!link) continue;
+                                const href = link.href;
+                                
+                                // Extract review count from the card text
+                                let reviewCount = 0;
+                                const spans = card.querySelectorAll('span');
+                                for (const span of spans) {
+                                    const m = span.textContent.match(/\(([\d,]+)\)/);
+                                    if (m) {
+                                        reviewCount = parseInt(m[1].replace(/,/g, '')) || 0;
+                                        break;
+                                    }
+                                }
+                                
+                                // Only include if reviews >= minimum threshold
+                                if (reviewCount >= minReviews) {
+                                    results.push({url: href, reviews: reviewCount});
+                                }
+                            }
+                            return results;
+                        }''', min_reviews)
 
                         new_count = 0
-                        for u in urls:
-                            clean_url = u.split('?')[0]
+                        skipped_count = 0
+                        # Also count total cards to know how many were filtered
+                        total_cards = await page.evaluate('''() => {
+                            return document.querySelectorAll('div[role="feed"] a[href*="/maps/place/"]').length;
+                        }''')
+                        skipped_count = total_cards - len(items)
+                        phase1_progress["skipped_low_reviews"] += skipped_count
+
+                        for item in items:
+                            clean_url = item['url'].split('?')[0]
                             if clean_url not in seen_urls:
                                 seen_urls.add(clean_url)
-                                worker_urls.append(u)
+                                worker_urls.append(item['url'])
                                 new_count += 1
 
                         phase1_progress["done"] += 1
@@ -236,7 +265,7 @@ async def scrape_google_maps(query: str, location: str, max_results: int = 200, 
 
                         if progress_cb and phase1_progress["done"] % 2 == 0:
                             await progress_cb("google_maps", phase1_progress["done"], phase1_progress["total"],
-                                f"🔍 [{phase1_progress['done']}/{phase1_progress['total']}] W{worker_id+1}: +{new_count} from {search_loc} ({phase1_progress['urls_found']} total)")
+                                f"🔍 [{phase1_progress['done']}/{phase1_progress['total']}] W{worker_id+1}: +{new_count} from {search_loc} ({phase1_progress['urls_found']} qualified, {phase1_progress['skipped_low_reviews']} filtered <{min_reviews}rev)")
 
                     except Exception as e:
                         phase1_progress["done"] += 1
@@ -255,7 +284,7 @@ async def scrape_google_maps(query: str, location: str, max_results: int = 200, 
 
             if progress_cb:
                 await progress_cb("google_maps", len(searches), len(searches),
-                    f"✅ Phase 1 done: {len(all_place_urls)} unique places found across {len(searches)} areas")
+                    f"✅ Phase 1 done: {len(all_place_urls)} qualified places found across {len(searches)} areas ({phase1_progress['skipped_low_reviews']} skipped with <{min_reviews} reviews)")
 
             # ═══════════════════════════════════════════════
             # PHASE 2: Parallel data extraction (3 workers)
