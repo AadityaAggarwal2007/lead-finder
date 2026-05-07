@@ -16,8 +16,8 @@ from area_data import get_ranked_areas
 FAILED_URLS_FILE = os.path.join(os.path.dirname(__file__), "..", "failed_urls.json")
 
 
-def _get_sub_areas(location: str, max_tier: int = 2) -> list:
-    """Get areas ranked by affluence — premium first."""
+def _get_sub_areas(location: str, max_tier: int = 3) -> list:
+    """Get areas ranked by affluence — premium first, all tiers included."""
     areas = get_ranked_areas(location, max_tier=max_tier)
     if areas:
         return areas
