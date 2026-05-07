@@ -32,8 +32,21 @@
                     <input type="text" id="query" placeholder="e.g., Jewellery Shop, Coaching Center, Restaurant" required>
                 </div>
                 <div class="form-group">
-                    <label>Location / Area</label>
-                    <input type="text" id="location" placeholder="e.g., Karol Bagh, Delhi" required>
+                    <label>Location / Cities</label>
+                    <div id="citySelector" style="position:relative">
+                        <div id="cityDisplay" onclick="toggleCityDropdown()" style="background:var(--bg-tertiary);border:1px solid var(--border);border-radius:10px;padding:10px 14px;cursor:pointer;min-height:42px;display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+                            <span style="color:var(--text-secondary)">Select cities...</span>
+                        </div>
+                        <div id="cityDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;margin-top:4px;max-height:300px;overflow-y:auto;z-index:100;padding:8px">
+                            <div style="display:flex;gap:6px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+                                <button type="button" onclick="selectAllCities()" style="flex:1;padding:6px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:12px">✅ All Cities</button>
+                                <button type="button" onclick="selectTier1()" style="flex:1;padding:6px;border-radius:6px;border:none;background:linear-gradient(135deg,#ff9500,#ff6b00);color:#fff;cursor:pointer;font-size:12px">🏆 All Tier 1</button>
+                                <button type="button" onclick="clearCities()" style="flex:1;padding:6px;border-radius:6px;border:none;background:var(--bg-tertiary);color:var(--text-secondary);cursor:pointer;font-size:12px">Clear</button>
+                            </div>
+                            <div id="cityCheckboxes"></div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="location" value="">
                 </div>
                 <div class="form-group">
                     <label>&nbsp;</label>
@@ -45,6 +58,84 @@
                     <input type="checkbox" value="google_maps" checked> Google Maps / Business
                 </label>
             </div>
+
+            <script>
+            const CITIES = [
+                {name:"Delhi", areas:71}, {name:"Mumbai", areas:64}, {name:"Bangalore", areas:56},
+                {name:"Hyderabad", areas:52}, {name:"Pune", areas:56}, {name:"Chennai", areas:56},
+                {name:"Kolkata", areas:51}, {name:"Ahmedabad", areas:40}, {name:"Jaipur", areas:28},
+                {name:"Noida", areas:15}, {name:"Gurgaon", areas:28}, {name:"Chandigarh", areas:40},
+                {name:"Lucknow", areas:32}, {name:"Indore", areas:24}, {name:"Kochi", areas:24},
+                {name:"Coimbatore", areas:24}, {name:"Visakhapatnam", areas:24}, {name:"Nagpur", areas:24},
+                {name:"Bhopal", areas:24}, {name:"Mysore", areas:20},
+            ];
+            let selectedCities = new Set();
+            let tier1Mode = false;
+
+            // Build checkboxes
+            const cbContainer = document.getElementById('cityCheckboxes');
+            CITIES.forEach(c => {
+                const div = document.createElement('div');
+                div.style.cssText = 'padding:5px 8px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px';
+                div.onmouseenter = () => div.style.background = 'var(--bg-tertiary)';
+                div.onmouseleave = () => div.style.background = 'transparent';
+                div.innerHTML = `<input type="checkbox" id="city_${c.name}" value="${c.name}" onchange="updateCitySelection()" style="cursor:pointer">
+                    <label for="city_${c.name}" style="cursor:pointer;flex:1;font-size:14px">${c.name}</label>
+                    <span style="font-size:11px;color:var(--text-secondary)">${c.areas} areas</span>`;
+                cbContainer.appendChild(div);
+            });
+
+            function toggleCityDropdown() {
+                const dd = document.getElementById('cityDropdown');
+                dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+            }
+            document.addEventListener('click', (e) => {
+                if (!document.getElementById('citySelector').contains(e.target))
+                    document.getElementById('cityDropdown').style.display = 'none';
+            });
+
+            function selectAllCities() {
+                tier1Mode = false;
+                document.querySelectorAll('#cityCheckboxes input').forEach(cb => cb.checked = true);
+                updateCitySelection();
+            }
+            function selectTier1() {
+                tier1Mode = true;
+                document.querySelectorAll('#cityCheckboxes input').forEach(cb => cb.checked = true);
+                updateCitySelection();
+            }
+            function clearCities() {
+                tier1Mode = false;
+                document.querySelectorAll('#cityCheckboxes input').forEach(cb => cb.checked = false);
+                updateCitySelection();
+            }
+
+            function updateCitySelection() {
+                selectedCities.clear();
+                document.querySelectorAll('#cityCheckboxes input:checked').forEach(cb => selectedCities.add(cb.value));
+
+                const display = document.getElementById('cityDisplay');
+                const hidden = document.getElementById('location');
+
+                if (selectedCities.size === 0) {
+                    display.innerHTML = '<span style="color:var(--text-secondary)">Select cities...</span>';
+                    hidden.value = '';
+                } else if (tier1Mode && selectedCities.size === CITIES.length) {
+                    display.innerHTML = '<span style="background:linear-gradient(135deg,#ff9500,#ff6b00);color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600">🏆 All Tier 1 Premium (331 areas)</span>';
+                    hidden.value = 'All Tier 1';
+                } else if (selectedCities.size === CITIES.length) {
+                    display.innerHTML = '<span style="background:var(--accent);color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600">✅ All 20 Cities</span>';
+                    hidden.value = Array.from(selectedCities).join(',');
+                    tier1Mode = false;
+                } else {
+                    tier1Mode = false;
+                    display.innerHTML = Array.from(selectedCities).map(c =>
+                        `<span style="background:var(--bg-tertiary);padding:2px 8px;border-radius:8px;font-size:12px">${c}</span>`
+                    ).join('');
+                    hidden.value = selectedCities.size === 1 ? Array.from(selectedCities)[0] : Array.from(selectedCities).join(',');
+                }
+            }
+            </script>
         </section>
 
         <!-- Progress Section -->

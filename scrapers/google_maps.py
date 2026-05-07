@@ -17,10 +17,35 @@ FAILED_URLS_FILE = os.path.join(os.path.dirname(__file__), "..", "failed_urls.js
 
 
 def _get_sub_areas(location: str, max_tier: int = 3) -> list:
-    """Get areas ranked by affluence — premium first, all tiers included."""
+    """Get areas ranked by affluence — supports multi-city comma-separated locations."""
+    
+    # Multi-city: "Delhi,Mumbai,Bangalore" — check FIRST before single-city
+    if "," in location:
+        combined = []
+        seen = set()
+        for city in location.split(","):
+            city = city.strip()
+            if not city:
+                continue
+            city_areas = get_ranked_areas(city, max_tier=max_tier)
+            if city_areas:
+                for a in city_areas:
+                    key = a.lower()
+                    if key not in seen:
+                        seen.add(key)
+                        if city.lower() not in a.lower():
+                            combined.append(f"{a}, {city}")
+                        else:
+                            combined.append(a)
+            else:
+                combined.append(city)
+        return combined if combined else [location]
+    
+    # "All Tier 1" or single city
     areas = get_ranked_areas(location, max_tier=max_tier)
     if areas:
         return areas
+    
     # Fallback: treat the location itself as the only area
     return [location]
 
