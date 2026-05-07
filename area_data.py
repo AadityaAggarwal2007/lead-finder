@@ -237,20 +237,146 @@ CITY_AREAS["gurgaon"] = CITY_AREAS.get("gurugram", {
 })
 CITY_AREAS["gurugram"] = CITY_AREAS["gurgaon"]
 
+# ─── New High-Income Cities ────────────────────────────────
 
-def get_ranked_areas(location: str, max_tier: int = 2) -> list:
+CITY_AREAS["chandigarh"] = {
+    1: ["Sector 17", "Sector 22", "Sector 35", "Sector 8",
+        "Sector 9", "Sector 10", "Sector 11", "Sector 7",
+        "Sector 15", "Sector 16", "Sector 26", "Sector 34",
+        "Sector 43", "Sector 44", "IT Park Chandigarh", "Elante Mall Area"],
+    2: ["Sector 20", "Sector 21", "Sector 23", "Sector 27",
+        "Sector 32", "Sector 33", "Sector 36", "Sector 38",
+        "Sector 40", "Sector 41", "Sector 46", "Sector 47",
+        "Mohali Phase 5", "Mohali Phase 7", "Mohali Phase 8", "Zirakpur"],
+    3: ["Sector 48", "Sector 49", "Sector 52", "Sector 56",
+        "Panchkula Sector 9", "Panchkula Sector 11", "Kharar", "Derabassi"],
+}
+
+CITY_AREAS["lucknow"] = {
+    1: ["Hazratganj", "Gomti Nagar", "Aliganj", "Indira Nagar Lucknow",
+        "Mahanagar", "Lalbagh", "Jopling Road", "Mall Avenue",
+        "Cantonment", "La Martiniere Area", "Butler Colony", "Kaiserbagh"],
+    2: ["Aminabad", "Chowk", "Alambagh", "Rajajipuram",
+        "Vikas Nagar", "Jankipuram", "Faizabad Road", "Sitapur Road",
+        "Ashiyana", "Aashiana", "Saharaganj", "Kapoorthala"],
+    3: ["Chinhat", "Mohanlalganj", "Kakori", "Malihabad",
+        "Itaunja", "Bakshi Ka Talab", "Sarojini Nagar", "Gudamba"],
+}
+
+CITY_AREAS["indore"] = {
+    1: ["Vijay Nagar", "Palasia", "Sapna Sangeeta", "New Palasia",
+        "South Tukoganj", "Race Course Road", "AB Road Indore", "Bhawarkuan",
+        "Scheme 54", "Scheme 78", "Scheme 140", "Nipania"],
+    2: ["Rajendra Nagar", "MG Road Indore", "Rau", "Bhanwarkuan",
+        "Aerodrome Area", "Annapurna", "Bicholi Mardana", "Tilak Nagar Indore",
+        "Sudama Nagar", "Geeta Bhawan", "Mhow", "Dewas Naka"],
+}
+
+CITY_AREAS["kochi"] = {
+    1: ["MG Road Kochi", "Marine Drive Kochi", "Panampilly Nagar", "Kadavanthra",
+        "Vyttila", "Edappally", "Palarivattom", "Kaloor",
+        "Ravipuram", "Girinagar", "Elamkulam", "SA Road"],
+    2: ["Aluva", "Kakkanad", "Thrippunithura", "Maradu",
+        "Ernakulam South", "Ernakulam North", "Mattancherry", "Fort Kochi",
+        "Kalamassery", "Angamaly", "Perumbavoor", "Muvattupuzha"],
+}
+
+CITY_AREAS["coimbatore"] = {
+    1: ["RS Puram", "Race Course Coimbatore", "Peelamedu", "Gandhipuram",
+        "Saibaba Colony", "Tatabad", "Townhall", "Avinashi Road",
+        "Brookefields Coimbatore", "Fun Republic Area", "Hopes College", "Nava India"],
+    2: ["Singanallur", "Ganapathy", "Vadavalli", "Thudiyalur",
+        "Sulur", "Saravanampatti", "Kalapatti", "Ondipudur",
+        "Kovaipudur", "Vilankurichi", "Kuniyamuthur", "Podanur"],
+}
+
+CITY_AREAS["visakhapatnam"] = {
+    1: ["MVP Colony", "Dwaraka Nagar", "Siripuram", "Waltair",
+        "Beach Road Vizag", "Rama Talkies", "Jagadamba Junction", "CBM Compound",
+        "Lawsons Bay Colony", "Kirlampudi", "Seethammadhara", "Madhurawada"],
+    2: ["Gajuwaka", "NAD Junction", "Gopalapatnam", "Pendurthi",
+        "Maharanipeta", "Akkayyapalem", "Asilmetta", "Old Town Vizag",
+        "Rushikonda", "PM Palem", "Yendada", "Kommadi"],
+}
+
+CITY_AREAS["vizag"] = CITY_AREAS["visakhapatnam"]
+
+CITY_AREAS["nagpur"] = {
+    1: ["Dharampeth", "Ramdaspeth", "Civil Lines Nagpur", "Sadar",
+        "Sitabuldi", "Laxmi Nagar Nagpur", "Pratap Nagar Nagpur", "Seminary Hills",
+        "Bajaj Nagar", "Shankar Nagar", "Ambazari", "Law College Square"],
+    2: ["Manish Nagar", "Trimurti Nagar", "Wardha Road", "Hingna Road",
+        "Manewada", "Somalwada", "Khamla", "Congress Nagar",
+        "Nandanvan", "Jaripatka", "Gandhibagh", "Itwari"],
+}
+
+CITY_AREAS["bhopal"] = {
+    1: ["MP Nagar", "Arera Colony", "Shahpura", "New Market Bhopal",
+        "TT Nagar", "Shivaji Nagar Bhopal", "Hoshangabad Road", "Kolar Road",
+        "BHEL Township", "Bairagarh", "Habib Ganj", "Ayodhya Nagar"],
+    2: ["Govindpura", "Misrod", "Mandideep", "Lalghati",
+        "Karond", "Bawadiya Kalan", "Ashoka Garden", "Piplani",
+        "Katara Hills", "Danish Nagar", "Nehru Nagar", "Chunabhatti"],
+}
+
+CITY_AREAS["mysore"] = {
+    1: ["Gokulam", "Vijayanagar Mysore", "Saraswathipuram", "Jayalakshmipuram",
+        "Lakshmipuram", "Vontikoppal", "Chamaraja Mohalla", "Nazarbad",
+        "Kuvempunagar", "Hebbal Mysore", "JP Nagar Mysore", "VV Mohalla"],
+    2: ["Hootagalli", "Srirampura", "Dattagalli", "Bogadi",
+        "Vijayanagar 4th Stage", "Ramakrishna Nagar", "Yadavagiri", "Bannimantap"],
+}
+CITY_AREAS["mysuru"] = CITY_AREAS["mysore"]
+
+
+# ─── All Tier 1 Premium Areas (Cross-City) ────────────────
+
+# Canonical city names (skip aliases)
+_CANONICAL_CITIES = [
+    "delhi", "mumbai", "bangalore", "hyderabad", "pune", "chennai",
+    "kolkata", "ahmedabad", "jaipur", "noida", "gurgaon",
+    "chandigarh", "lucknow", "indore", "kochi", "coimbatore",
+    "visakhapatnam", "nagpur", "bhopal", "mysore",
+]
+
+
+def get_all_tier1_areas() -> list:
+    """
+    Get ALL Tier 1 premium areas across every city.
+    Returns list of tuples: (city, area_name) for Google Maps search.
+    Use when searching 'All Tier 1' or 'All Premium'.
+    """
+    result = []
+    for city in _CANONICAL_CITIES:
+        if city in CITY_AREAS and 1 in CITY_AREAS[city]:
+            for area in CITY_AREAS[city][1]:
+                result.append((city, area))
+    return result
+
+
+def get_ranked_areas(location: str, max_tier: int = 3) -> list:
     """
     Get areas for a city, ranked by affluence.
     Returns areas from Tier 1 through max_tier.
     
+    Special locations:
+        "all tier 1" / "all premium" — returns Tier 1 from ALL cities
+    
     Args:
-        location: City name (e.g. "Delhi", "Mumbai")
+        location: City name (e.g. "Delhi", "Mumbai") or "all tier 1"
         max_tier: Maximum tier to include (1=premium only, 2=premium+upper, 3=all)
     
     Returns:
-        List of area names, ordered premium-first
+        List of area names (or "area, city" for all-tier-1 mode)
     """
     loc = location.lower().strip()
+    
+    # Special: All Tier 1 across all cities
+    if loc in ("all tier 1", "all premium", "all cities tier 1", "tier 1", "premium"):
+        result = []
+        for city, area in get_all_tier1_areas():
+            result.append(f"{area}, {city.title()}")
+        return result
     
     # Find matching city
     matched_city = None
@@ -286,22 +412,10 @@ def get_area_tier(location: str, area: str) -> int:
 
 def get_supported_cities() -> list:
     """Return list of cities with area intelligence."""
-    seen = set()
     cities = []
-    for key in CITY_AREAS:
-        # Skip aliases
-        if CITY_AREAS[key] is CITY_AREAS.get("delhi") and key not in ("delhi",):
-            continue
-        if CITY_AREAS[key] is CITY_AREAS.get("mumbai") and key not in ("mumbai",):
-            continue
-        if CITY_AREAS[key] is CITY_AREAS.get("bangalore") and key not in ("bangalore",):
-            continue
-        if CITY_AREAS[key] is CITY_AREAS.get("kolkata") and key not in ("kolkata",):
-            continue
-        if CITY_AREAS[key] is CITY_AREAS.get("gurgaon") and key not in ("gurgaon",):
-            continue
-        if key not in seen:
-            seen.add(key)
+    for key in _CANONICAL_CITIES:
+        if key in CITY_AREAS:
             total = sum(len(v) for v in CITY_AREAS[key].values())
             cities.append({"name": key.title(), "areas": total})
     return cities
+
