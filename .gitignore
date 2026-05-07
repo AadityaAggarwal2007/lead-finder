@@ -1,0 +1,21 @@
+# Database
+*.db
+*.db-journal
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Browser data
+playwright/
+failed_urls.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

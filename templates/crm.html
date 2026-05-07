@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Dashboard — {{ search.query }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .crm-wrap { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .crm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .crm-header h1 { font-size: 22px; }
+        .crm-header .back { color: var(--accent); text-decoration: none; font-size: 14px; }
+
+        /* Stats Cards */
+        .stats-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-card { padding: 16px; border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+        .stat-card:hover { transform: translateY(-2px); }
+        .stat-card.active { border-color: var(--accent); }
+        .stat-card .num { font-size: 28px; font-weight: 700; }
+        .stat-card .lbl { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+        .s-all { background: rgba(255,255,255,0.05); } .s-all .num { color: #fff; }
+        .s-pending { background: rgba(0,122,255,0.12); } .s-pending .num { color: #007aff; }
+        .s-hot { background: rgba(255,59,48,0.12); } .s-hot .num { color: #ff3b30; }
+        .s-call_later { background: rgba(50,215,75,0.12); } .s-call_later .num { color: #32d74b; }
+        .s-not_picked { background: rgba(255,149,0,0.12); } .s-not_picked .num { color: #ff9500; }
+        .s-transferred { background: rgba(88,86,214,0.12); } .s-transferred .num { color: #5856d6; }
+        .s-not_happening { background: rgba(142,142,147,0.12); } .s-not_happening .num { color: #8e8e93; }
+
+        /* Excel Tabs */
+        .tab-bar { display: flex; gap: 0; border-bottom: 2px solid rgba(255,255,255,0.08); margin-bottom: 0; }
+        .tab { padding: 10px 20px; cursor: pointer; font-size: 13px; font-weight: 600; border: 1px solid rgba(255,255,255,0.08);
+               border-bottom: none; border-radius: 8px 8px 0 0; background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.5);
+               transition: all 0.2s; }
+        .tab:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .tab.active { background: rgba(255,255,255,0.08); color: #fff; border-bottom: 2px solid var(--accent); margin-bottom: -2px; }
+
+        /* Table */
+        .table-wrap { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-top: none;
+                       border-radius: 0 0 12px 12px; overflow-x: auto; max-height: 65vh; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead { position: sticky; top: 0; z-index: 10; }
+        th { background: rgba(255,255,255,0.06); padding: 10px 12px; text-align: left; font-weight: 600;
+             color: rgba(255,255,255,0.7); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+             border-bottom: 1px solid rgba(255,255,255,0.1); white-space: nowrap; cursor: pointer; user-select: none; }
+        th:hover { color: #fff; }
+        td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; max-width: 200px;
+             overflow: hidden; text-overflow: ellipsis; }
+        tr:hover { background: rgba(255,255,255,0.04); }
+        tr.hot { border-left: 3px solid #ff3b30; }
+        tr.call_later { border-left: 3px solid #32d74b; }
+        tr.not_picked { border-left: 3px solid #ff9500; }
+        tr.transferred { border-left: 3px solid #5856d6; }
+        tr.not_happening { border-left: 3px solid #8e8e93; opacity: 0.6; }
+
+        /* Score badge */
+        .score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-weight: 700; font-size: 12px; }
+        .score-hot { background: rgba(255,59,48,0.2); color: #ff3b30; }
+        .score-warm { background: rgba(255,204,0,0.2); color: #ffcc00; }
+        .score-cold { background: rgba(0,122,255,0.2); color: #007aff; }
+
+        /* Status dropdown */
+        .status-select { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff;
+                         padding: 4px 8px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+        .status-select option { background: #1a1a2e; }
+
+        /* Action buttons */
+        .act-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px; border-radius: 4px; }
+        .act-btn:hover { background: rgba(255,255,255,0.1); }
+
+        .call-btn { background: linear-gradient(135deg,#34c759,#30d158); color: #fff; border: none; padding: 8px 20px;
+                    border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
+        .call-btn:hover { opacity: 0.9; }
+        .empty-tab { text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.3); font-size: 16px; }
+
+        /* Notes cell */
+        .notes-input { background: transparent; border: none; color: rgba(255,255,255,0.7); font-size: 12px;
+                       width: 100%; outline: none; }
+        .notes-input:focus { color: #fff; border-bottom: 1px solid var(--accent); }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">📊</div>
+            <div>
+                <h1>CRM Dashboard</h1>
+                <span>{{ search.query }} · {{ search.location }}</span>
+            </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center">
+            <button class="call-btn" onclick="window.open('/','_self')">← Back</button>
+            <button class="call-btn" onclick="startCallingFromCRM()">📞 Start Calling</button>
+        </div>
+    </header>
+
+    <div class="crm-wrap">
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-card s-all active" onclick="switchTab('all')" id="card-all">
+                <div class="num" id="n-all">{{ stats.total }}</div><div class="lbl">📋 All Leads</div>
+            </div>
+            <div class="stat-card s-pending" onclick="switchTab('pending')" id="card-pending">
+                <div class="num" id="n-pending">{{ stats.pending }}</div><div class="lbl">⏳ Pending</div>
+            </div>
+            <div class="stat-card s-hot" onclick="switchTab('hot')" id="card-hot">
+                <div class="num" id="n-hot">{{ stats.hot }}</div><div class="lbl">🔥 Hot</div>
+            </div>
+            <div class="stat-card s-call_later" onclick="switchTab('call_later')" id="card-call_later">
+                <div class="num" id="n-call_later">{{ stats.call_later }}</div><div class="lbl">🕐 Call Later</div>
+            </div>
+            <div class="stat-card s-not_picked" onclick="switchTab('not_picked')" id="card-not_picked">
+                <div class="num" id="n-not_picked">{{ stats.not_picked }}</div><div class="lbl">📵 Not Picked</div>
+            </div>
+            <div class="stat-card s-transferred" onclick="switchTab('transferred')" id="card-transferred">
+                <div class="num" id="n-transferred">{{ stats.transferred }}</div><div class="lbl">↗️ Transferred</div>
+            </div>
+            <div class="stat-card s-not_happening" onclick="switchTab('not_happening')" id="card-not_happening">
+                <div class="num" id="n-not_happening">{{ stats.not_happening }}</div><div class="lbl">❌ Not Happening</div>
+            </div>
+        </div>
+
+        <!-- Excel Tabs -->
+        <div class="tab-bar">
+            <div class="tab active" id="tab-all" onclick="switchTab('all')">All</div>
+            <div class="tab" id="tab-pending" onclick="switchTab('pending')">⏳ Pending</div>
+            <div class="tab" id="tab-hot" onclick="switchTab('hot')">🔥 Hot</div>
+            <div class="tab" id="tab-call_later" onclick="switchTab('call_later')">🕐 Call Later</div>
+            <div class="tab" id="tab-not_picked" onclick="switchTab('not_picked')">📵 Not Picked</div>
+            <div class="tab" id="tab-transferred" onclick="switchTab('transferred')">↗️ Transferred</div>
+            <div class="tab" id="tab-not_happening" onclick="switchTab('not_happening')">❌ Not Happening</div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th onclick="sortBy('ai_ranking_score')" style="width:60px">Score ↕</th>
+                        <th onclick="sortBy('business_name')">Business Name ↕</th>
+                        <th onclick="sortBy('category')">Category ↕</th>
+                        <th onclick="sortBy('phone')">Phone</th>
+                        <th onclick="sortBy('rating')">Rating ↕</th>
+                        <th>Website</th>
+                        <th style="width:100px">Status</th>
+                        <th style="width:160px">Notes</th>
+                        <th style="width:50px"></th>
+                    </tr>
+                </thead>
+                <tbody id="crmBody"></tbody>
+            </table>
+            <div id="emptyMsg" class="empty-tab" style="display:none">No leads in this category yet</div>
+        </div>
+        <div id="loadMoreBtn" style="display:none;text-align:center;padding:16px">
+            <button onclick="loadMore()" class="call-btn" style="background:linear-gradient(135deg,var(--accent),#7c3aed)">Load More (next 100) ↓</button>
+        </div>
+    </div>
+
+    <!-- Lead Detail Modal -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal">
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+    const SEARCH_ID = {{ search_id }};
+    let crmLeads = [];
+    let currentTab = 'all';
+    let currentOffset = 0;
+    let hasMore = false;
+    const PAGE_SIZE = 100;
+
+    async function switchTab(tab) {
+        currentTab = tab;
+        currentOffset = 0;
+        crmLeads = [];
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+        document.getElementById('tab-' + tab).classList.add('active');
+        document.getElementById('card-' + tab).classList.add('active');
+        await loadPage();
+    }
+
+    async function loadPage() {
+        const resp = await fetch(`/api/search/${SEARCH_ID}/leads-by-status?status=${currentTab}&limit=${PAGE_SIZE}&offset=${currentOffset}`);
+        const data = await resp.json();
+        if (currentOffset === 0) crmLeads = data.leads;
+        else crmLeads = crmLeads.concat(data.leads);
+        hasMore = data.has_more;
+        renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('crmBody');
+        const empty = document.getElementById('emptyMsg');
+        const moreBtn = document.getElementById('loadMoreBtn');
+        if (!crmLeads.length) { tbody.innerHTML = ''; empty.style.display = 'block'; moreBtn.style.display = 'none'; return; }
+        empty.style.display = 'none';
+        moreBtn.style.display = hasMore ? 'block' : 'none';
+
+        tbody.innerHTML = crmLeads.map(l => {
+            const score = l.ai_ranking_score || 0;
+            const sc = score >= 70 ? 'hot' : score >= 45 ? 'warm' : 'cold';
+            const status = l.call_status || '';
+            const web = l.website ? `<a href="${l.website}" target="_blank" style="color:var(--accent)">🌐</a>` : '<span style="color:#34c759">None</span>';
+            const phone = l.phone ? `<a href="tel:${l.phone}" style="color:#fff">${l.phone}</a>` : '—';
+            const rating = l.rating ? `⭐${l.rating} (${l.review_count})` : '—';
+            const notesEsc = (l.call_notes || '').replace(/"/g, '&quot;');
+
+            return `<tr class="${status}">
+                <td><span class="score-pill score-${sc}">${score}</span></td>
+                <td style="cursor:pointer;color:var(--accent)" onclick="showDetail(${l.id})">${l.business_name || '?'}</td>
+                <td>${l.category || '—'}</td>
+                <td>${phone}</td>
+                <td>${rating}</td>
+                <td>${web}</td>
+                <td>
+                    <select class="status-select" onchange="changeStatus(${l.id}, this.value)">
+                        <option value="" ${!status?'selected':''}>⏳ Pending</option>
+                        <option value="hot" ${status==='hot'?'selected':''}>🔥 Hot</option>
+                        <option value="call_later" ${status==='call_later'?'selected':''}>🕐 Call Later</option>
+                        <option value="not_picked" ${status==='not_picked'?'selected':''}>📵 Not Picked</option>
+                        <option value="transferred" ${status==='transferred'?'selected':''}>↗️ Transferred</option>
+                        <option value="not_happening" ${status==='not_happening'?'selected':''}>❌ Not Happening</option>
+                    </select>
+                </td>
+                <td><input class="notes-input" value="${notesEsc}" placeholder="Add notes..."
+                    onblur="saveNotes(${l.id}, this.value)"></td>
+                <td><button class="act-btn" onclick="showDetail(${l.id})">👁️</button></td>
+            </tr>`;
+        }).join('');
+    }
+
+    async function loadMore() {
+        currentOffset += PAGE_SIZE;
+        await loadPage();
+    }
+
+    async function changeStatus(leadId, newStatus) {
+        await fetch(`/api/lead/${leadId}/call-status`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({status: newStatus, notes: ''}),
+        });
+        await refreshStats();
+        if (currentTab !== 'all') {
+            crmLeads = crmLeads.filter(l => l.id !== leadId);
+            renderTable();
+        }
+    }
+
+    async function saveNotes(leadId, notes) {
+        const lead = crmLeads.find(l => l.id === leadId);
+        if (!lead) return;
+        await fetch(`/api/lead/${leadId}/call-status`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({status: lead.call_status || '', notes}),
+        });
+    }
+
+    async function refreshStats() {
+        const resp = await fetch(`/api/search/${SEARCH_ID}/call-stats`);
+        const s = await resp.json();
+        document.getElementById('n-all').textContent = s.total;
+        document.getElementById('n-pending').textContent = s.pending;
+        document.getElementById('n-hot').textContent = s.hot;
+        document.getElementById('n-call_later').textContent = s.call_later;
+        document.getElementById('n-not_picked').textContent = s.not_picked;
+        document.getElementById('n-transferred').textContent = s.transferred;
+        document.getElementById('n-not_happening').textContent = s.not_happening;
+    }
+
+    async function showDetail(leadId) {
+        const lead = crmLeads.find(l => l.id === leadId);
+        if (!lead) return;
+        let wa = {}, raw = {};
+        try { wa = JSON.parse(lead.website_analysis || '{}'); } catch(e) {}
+        try { raw = JSON.parse(lead.raw_data || '{}'); } catch(e) {}
+        const mapsUrl = raw.maps_url || '';
+        const websiteInfo = lead.website
+            ? `<a href="${lead.website}" target="_blank" style="color:var(--accent)">${lead.website}</a>`
+            : '<span style="color:#34c759">No Website — OPPORTUNITY!</span>';
+        const reportBullets = (wa.detailed_report || []).map(r => `<li>${r}</li>`).join('');
+        const recBullets = (wa.recommendations || []).map(r => `<li style="color:var(--accent)">${r}</li>`).join('');
+
+        document.getElementById('modalContent').innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px">
+                <h2>${lead.business_name}</h2>
+                <button onclick="closeCrmModal()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer">✕</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+                <div><strong>Phone:</strong> ${lead.phone ? `<a href="tel:${lead.phone}" style="color:var(--accent)">${lead.phone}</a>` : 'N/A'}</div>
+                <div><strong>Score:</strong> ${lead.ai_ranking_score}/100</div>
+                <div><strong>Category:</strong> ${lead.category || 'N/A'}</div>
+                <div><strong>Rating:</strong> ${lead.rating ? `⭐ ${lead.rating} (${lead.review_count})` : 'N/A'}</div>
+                <div><strong>Website:</strong> ${websiteInfo}</div>
+                <div><strong>Address:</strong> ${lead.address || 'N/A'}</div>
+            </div>
+            ${wa.verdict ? `<div style="padding:10px;border-radius:8px;background:rgba(255,255,255,0.05);margin-bottom:12px;font-weight:600">${wa.verdict}</div>` : ''}
+            ${reportBullets ? `<div style="margin-bottom:12px"><strong>📊 Report:</strong><ul style="padding-left:20px">${reportBullets}</ul></div>` : ''}
+            ${recBullets ? `<div style="margin-bottom:16px"><strong>🔧 Improvements:</strong><ul style="padding-left:20px">${recBullets}</ul></div>` : ''}
+            <div style="display:flex;gap:10px">
+                ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="btn btn-secondary btn-sm">📍 Maps</a>` : ''}
+                <a href="https://www.google.com/search?q=${encodeURIComponent((lead.business_name||'')+' '+(lead.address||''))}" target="_blank" class="btn btn-secondary btn-sm">🔍 Search</a>
+                <button onclick="closeCrmModal()" class="btn btn-secondary btn-sm">Close</button>
+            </div>`;
+        const overlay = document.getElementById('modalOverlay');
+        overlay.style.display = 'flex';
+        overlay.classList.add('active');
+    }
+
+    function closeCrmModal() {
+        const overlay = document.getElementById('modalOverlay');
+        overlay.classList.remove('active');
+        overlay.style.display = 'none';
+    }
+
+    function startCallingFromCRM() {
+        window.open('/', '_self');
+    }
+
+    // Init
+    document.getElementById('modalOverlay').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeCrmModal();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCrmModal(); });
+    switchTab('all');
+    </script>
+</body>
+</html>

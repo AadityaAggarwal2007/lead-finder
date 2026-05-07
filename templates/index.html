@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeadHunter Pro — AI Lead Generation</title>
+    <meta name="description" content="AI-powered lead generation tool for web design sales">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">🎯</div>
+            <div>
+                <h1>LeadHunter Pro</h1>
+                <span>AI-Powered Lead Generation</span>
+            </div>
+        </div>
+        <div class="header-stats">
+            <span>Powered by <strong>Gemini Flash 2.5</strong></span>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Search Section -->
+        <section class="search-section">
+            <h2>🔍 Find Your Next Clients</h2>
+            <form id="searchForm" class="search-form">
+                <div class="form-group">
+                    <label>Business Type / Industry</label>
+                    <input type="text" id="query" placeholder="e.g., Jewellery Shop, Coaching Center, Restaurant" required>
+                </div>
+                <div class="form-group">
+                    <label>Location / Area</label>
+                    <input type="text" id="location" placeholder="e.g., Karol Bagh, Delhi" required>
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button type="submit" id="searchBtn" class="btn btn-primary">🔍 Hunt Leads</button>
+                </div>
+            </form>
+            <div class="source-checkboxes">
+                <label class="source-check">
+                    <input type="checkbox" value="google_maps" checked> Google Maps / Business
+                </label>
+            </div>
+        </section>
+
+        <!-- Progress Section -->
+        <section id="progressSection" class="progress-section">
+            <div class="progress-header">
+                <h3>🚀 Lead Hunt in Progress</h3>
+                <span id="progressStage" class="progress-stage">Initializing</span>
+            </div>
+            <div class="progress-bar-track">
+                <div id="progressBarFill" class="progress-bar-fill"></div>
+            </div>
+            <p id="progressMessage" class="progress-message">Starting search...</p>
+            <pre id="progressLogs" class="progress-logs"></pre>
+        </section>
+
+        <!-- Results Section -->
+        <section id="resultsSection" class="results-section" style="display:none">
+            <div class="results-header">
+                <h2><button class="btn btn-secondary btn-sm" onclick="window.location.reload()" style="margin-right:12px">← Back</button> 📊 Lead Results <span id="resultsCount" class="results-count"></span></h2>
+                <div class="results-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="exportCSV(currentSearchId, event)">📥 Export CSV</button>
+                </div>
+            </div>
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="renderLeads(currentLeads); document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active')">All</button>
+                <button class="filter-btn" onclick="filterLeads('hot')">🔥 Hot</button>
+                <button class="filter-btn" onclick="filterLeads('warm')">🟡 Warm</button>
+                <button class="filter-btn" onclick="filterLeads('no-website')">🚫 No Website</button>
+                <button class="filter-btn" onclick="filterLeads('contact')">✅ Worth Contacting</button>
+            </div>
+            <div id="leadsGrid" class="leads-grid"></div>
+        </section>
+
+        <!-- History Section -->
+        {% if searches %}
+        <section class="history-section">
+            <h2>📜 Search History</h2>
+            <div class="history-list">
+                {% for s in searches %}
+                <div class="history-item">
+                    <div class="history-info">
+                        <span class="history-query">{{ s.query }} in {{ s.location }}</span>
+                        <span class="history-meta">{{ s.total_leads }} leads · {{ s.created_at }}</span>
+                    </div>
+                    <div class="history-actions">
+                        <span class="status-badge {{ s.status }}">{{ s.status }}</span>
+                        {% if s.status in ['running', 'error'] %}
+                        <button class="btn btn-primary btn-sm" onclick="resumeSearch({{ s.id }}, event)">▶️ Resume</button>
+                        {% endif %}
+                        {% if s.status in ['completed', 'error'] %}
+                        <button class="btn btn-primary btn-sm" onclick="retryFailed({{ s.id }}, event)" title="Retry failed/skipped URLs">🔄 Retry Failed</button>
+                        <button class="btn btn-secondary btn-sm" onclick="rescanSearch({{ s.id }}, event)" title="Re-run search, skip already found">🔍 Re-scan</button>
+                        {% endif %}
+                        <button class="btn btn-primary btn-sm" onclick="startCalling({{ s.id }})" style="background:linear-gradient(135deg,#34c759,#30d158)">📞 Start Calling</button>
+                        <a href="/crm/{{ s.id }}" class="btn btn-primary btn-sm" style="text-decoration:none;background:linear-gradient(135deg,#5856d6,#af52de)">📊 CRM</a>
+                        <button class="btn btn-primary btn-sm" onclick="loadLeads({{ s.id }})">👁️ View Leads</button>
+                        {% if s.status == 'completed' %}
+                        <button class="btn btn-secondary btn-sm" onclick="exportCSV({{ s.id }}, event)">📥</button>
+                        {% endif %}
+                        <button class="btn btn-danger btn-sm" onclick="deleteSearch({{ s.id }}, event)">🗑️</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+    </div>
+
+    <!-- Lead Detail Modal -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal">
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
